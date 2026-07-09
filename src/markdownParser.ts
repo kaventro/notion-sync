@@ -3,6 +3,20 @@ import type { NotionBlock, NotionRichText } from "./types";
 /** Max characters per Notion rich text segment */
 const MAX_RICH_TEXT_LENGTH = 2000;
 
+/** Languages accepted by the Notion API for code blocks */
+const NOTION_CODE_LANGUAGES = new Set([
+  "abap", "arduino", "bash", "basic", "c", "clojure", "coffeescript", "c++",
+  "c#", "css", "dart", "diff", "docker", "elixir", "elm", "erlang", "flow",
+  "fortran", "f#", "gherkin", "glsl", "go", "graphql", "groovy", "haskell",
+  "html", "java", "javascript", "json", "julia", "kotlin", "latex", "less",
+  "lisp", "livescript", "lua", "makefile", "markdown", "markup", "matlab",
+  "mermaid", "nix", "objective-c", "ocaml", "pascal", "perl", "php",
+  "plain text", "powershell", "prolog", "protobuf", "python", "r", "reason",
+  "ruby", "rust", "sass", "scala", "scheme", "scss", "shell", "sql", "swift",
+  "typescript", "vb.net", "verilog", "vhdl", "visual basic", "webassembly",
+  "xml", "yaml", "java/c/c++/c#",
+]);
+
 /**
  * Converts Obsidian-flavored Markdown into Notion API block objects.
  */
@@ -20,7 +34,9 @@ export class MarkdownParser {
       if (result.block) {
         blocks.push(result.block);
       }
-      i = result.nextIndex;
+      // Guard against non-advancing parsers: a sub-parser that fails to
+      // consume at least one line would loop here forever and OOM.
+      i = result.nextIndex > i ? result.nextIndex : i + 1;
     }
 
     return blocks;
@@ -111,8 +127,9 @@ export class MarkdownParser {
       };
     }
 
-    // Fenced code block
-    const codeMatch = line.match(/^```(\w*)\s*$/);
+    // Fenced code block — language tags may contain non-word chars
+    // (e.g. "c++", "c#", "compressed-json" from Excalidraw)
+    const codeMatch = line.match(/^```([^\s`]*)\s*$/);
     if (codeMatch) {
       return this.parseCodeBlock(lines, index, codeMatch[1]);
     }
@@ -249,7 +266,10 @@ export class MarkdownParser {
       "": "plain text",
     };
     const normalized = lang.toLowerCase().trim();
-    return map[normalized] || normalized || "plain text";
+    const mapped = map[normalized] || normalized;
+    // Notion rejects code blocks whose language is not in its fixed enum,
+    // so anything unknown falls back to plain text.
+    return NOTION_CODE_LANGUAGES.has(mapped) ? mapped : "plain text";
   }
 
   // ── Table ───────────────────────────────────────────────────
@@ -559,16 +579,21 @@ export class MarkdownParser {
 
     while (i < lines.length) {
       const line = lines[i];
-      // Stop at blank lines or block-level elements
-      if (line.trim() === "") break;
-      if (/^#{1,3}\s/.test(line)) break;
-      if (/^```/.test(line)) break;
-      if (/^>\s/.test(line)) break;
-      if (/^[-*+]\s/.test(line)) break;
-      if (/^\d+\.\s/.test(line)) break;
-      if (/^- \[[ xX]\]/.test(line)) break;
-      if (/^(\*{3,}|-{3,}|_{3,})\s*$/.test(line.trim())) break;
-      if (this.isTableStart(lines, i)) break;
+      // Stop at blank lines or block-level elements — but always consume
+      // at least the first line: parseParagraph is the fallback for lines
+      // no other parser claimed, so refusing the first line would return
+      // nextIndex === startIndex and stall the parse loop.
+      if (i > startIndex) {
+        if (line.trim() === "") break;
+        if (/^#{1,3}\s/.test(line)) break;
+        if (/^```/.test(line)) break;
+        if (/^>\s/.test(line)) break;
+        if (/^[-*+]\s/.test(line)) break;
+        if (/^\d+\.\s/.test(line)) break;
+        if (/^- \[[ xX]\]/.test(line)) break;
+        if (/^(\*{3,}|-{3,}|_{3,})\s*$/.test(line.trim())) break;
+        if (this.isTableStart(lines, i)) break;
+      }
 
       paraLines.push(line);
       i++;
