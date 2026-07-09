@@ -10,7 +10,7 @@ import { StateManager, normalizeNotionId } from "./stateManager";
 import type { PluginSettings } from "./types";
 
 function errMsg(e: unknown): string {
-  return e instanceof Error ? errMsg(e) : String(e);
+  return e instanceof Error ? e.message : String(e);
 }
 
 /**
@@ -38,6 +38,24 @@ export class SyncEngine {
 
   private reportProgress(text: string, percent: number): void {
     this.progressCallback?.(text, percent);
+  }
+
+  // ── Persist callback ───────────────────────────────────────
+  // Saves mappings to disk incrementally during a sync. Without this,
+  // an interrupted sync (crash, app quit) loses every mapping created so
+  // far and the next sync re-creates the same pages in Notion.
+  private persistCallback: (() => Promise<void>) | null = null;
+
+  setPersistCallback(cb: (() => Promise<void>) | null): void {
+    this.persistCallback = cb;
+  }
+
+  private async persistState(): Promise<void> {
+    try {
+      await this.persistCallback?.();
+    } catch (e) {
+      this.stateManager.addLog("warn", `Failed to persist state: ${errMsg(e)}`);
+    }
   }
 
   constructor(
@@ -115,7 +133,10 @@ export class SyncEngine {
         const file = mdFiles[i];
         try {
           const didSync = await this.syncFile(file, false);
-          if (didSync) synced++;
+          if (didSync) {
+            synced++;
+            await this.persistState();
+          }
 
           // Progress notification every 25 files
           if ((i + 1) % 25 === 0) {
@@ -192,6 +213,7 @@ export class SyncEngine {
           if (this.stateManager.needsSync(file.path, hash)) {
             await this.syncFile(file, false);
             synced++;
+            await this.persistState();
           }
         } catch (error) {
           errors++;
@@ -582,6 +604,7 @@ export class SyncEngine {
             lastSyncedHash: hash,
             lastSyncedAt: Date.now(),
           });
+          await this.persistState();
 
           // Add to known IDs so we don't create it again
           knownIds.add(normalizedId);
@@ -934,6 +957,7 @@ export class SyncEngine {
               "\u{1F4C1}" // folder emoji
             );
             this.stateManager.setFolderMapping(subFolder.path, folderPageId);
+            await this.persistState();
             this.stateManager.addLog(
               "info",
               `Created folder: ${subFolder.path}`
@@ -959,6 +983,7 @@ export class SyncEngine {
               "\u{1F4C1}"
             );
             this.stateManager.setFolderMapping(subFolder.path, folderPageId);
+            await this.persistState();
           }
         }
 
@@ -990,6 +1015,7 @@ export class SyncEngine {
           "\u{1F4C1}"
         );
         this.stateManager.setFolderMapping(currentPath, folderId);
+        await this.persistState();
       }
       parentId = folderId;
     }

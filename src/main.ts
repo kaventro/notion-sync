@@ -42,6 +42,9 @@ export default class NotionSyncPlugin extends Plugin {
       this.settings,
       this.stateManager
     );
+    // Persist mappings incrementally during sync so an interrupted sync
+    // (crash, quit) never loses them and re-creates duplicate pages.
+    this.syncEngine.setPersistCallback(() => this.saveState());
 
     // Status bar
     this.statusBarEl = this.addStatusBarItem();
@@ -255,8 +258,8 @@ export default class NotionSyncPlugin extends Plugin {
       case SyncMode.OnSave:
         this.onSaveEventRef = this.app.vault.on("modify", (file) => {
           if (file instanceof TFile && file.extension === "md") {
-            if (this.saveDebounce) activeWindow.clearTimeout(this.saveDebounce);
-            this.saveDebounce = activeWindow.setTimeout(() => {
+            if (this.saveDebounce) window.clearTimeout(this.saveDebounce);
+            this.saveDebounce = window.setTimeout(() => {
               void this.syncCurrentFile(file);
             }, 2000);
           }
@@ -265,7 +268,7 @@ export default class NotionSyncPlugin extends Plugin {
         break;
 
       case SyncMode.Scheduled: {
-        const intervalId = activeWindow.setInterval(
+        const intervalId = window.setInterval(
           () => { void this.syncIncremental(); },
           this.settings.scheduledIntervalMinutes * 60 * 1000
         );
@@ -564,7 +567,7 @@ export default class NotionSyncPlugin extends Plugin {
 
   private clearScheduledSync(): void {
     if (this.scheduledInterval !== null) {
-      activeWindow.clearInterval(this.scheduledInterval);
+      window.clearInterval(this.scheduledInterval);
       this.scheduledInterval = null;
     }
     if (this.onSaveEventRef !== null) {
@@ -572,13 +575,13 @@ export default class NotionSyncPlugin extends Plugin {
       this.onSaveEventRef = null;
     }
     if (this.saveDebounce !== null) {
-      activeWindow.clearTimeout(this.saveDebounce);
+      window.clearTimeout(this.saveDebounce);
       this.saveDebounce = null;
     }
   }
 
   private debounceSaveState(): void {
-    if (this.saveDebounce) activeWindow.clearTimeout(this.saveDebounce);
-    this.saveDebounce = activeWindow.setTimeout(() => { void this.saveState(); }, 1000);
+    if (this.saveDebounce) window.clearTimeout(this.saveDebounce);
+    this.saveDebounce = window.setTimeout(() => { void this.saveState(); }, 1000);
   }
 }
