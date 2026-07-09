@@ -3,7 +3,7 @@
   "name": "Notion Sync",
   "version": "1.0.0",
   "minAppVersion": "1.4.0",
-  "description": "Synchronize your Obsidian vault with Notion — preserves folder hierarchy, markdown formatting, internal links, metadata, and attachments.",
+  "description": "Sync your vault with Notion — preserves folder hierarchy, markdown formatting, internal links, metadata, and attachments.",
   "author": "Sharky",
   "authorUrl": "https://github.com/sharkello",
   "isDesktopOnly": true
