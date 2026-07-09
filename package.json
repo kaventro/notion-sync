@@ -1,6 +1,6 @@
 {
   "name": "obsidian-notion-vault-sync",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Sync your Obsidian vault to Notion preserving structure, links, and metadata",
   "main": "main.js",
   "scripts": {
