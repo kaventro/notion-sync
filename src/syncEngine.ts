@@ -16,6 +16,7 @@ import type {
 import { SyncControl } from "./sync/syncControl";
 import { ProgressReporter, type ProgressCallback } from "./sync/progressReporter";
 import { StatePersister, type PersistCallback } from "./sync/statePersister";
+import { ChangeScanner, type PendingChange } from "./sync/changeScanner";
 import { WikiLinkRestorer } from "./sync/wikiLinkRestorer";
 import { VaultFileNamer } from "./sync/vaultFileNamer";
 import { ImageDownloader } from "./sync/imageDownloader";
@@ -48,6 +49,7 @@ export class SyncEngine {
   private readonly push: PushService;
   private readonly pull: PullService;
   private readonly importer: NotionTreeImporter;
+  private readonly changeScanner: ChangeScanner;
 
   constructor(app: App, settings: PluginSettings, stateManager: StateManager) {
     this.settings = settings;
@@ -55,6 +57,7 @@ export class SyncEngine {
 
     this.notionClient = new NotionClient(settings.notionToken);
     this.persister = new StatePersister(stateManager);
+    this.changeScanner = new ChangeScanner(app, stateManager);
     this.attachmentUploader = new AttachmentUploader(
       app,
       stateManager,
@@ -201,6 +204,13 @@ export class SyncEngine {
     return this.runExclusive({ created: 0, errors: 0 }, () =>
       this.importer.importNewPages()
     );
+  }
+
+  // ── Status ─────────────────────────────────────────────────
+
+  /** List local files a push would send to Notion (like `git status`). */
+  async scanPendingChanges(): Promise<PendingChange[]> {
+    return this.changeScanner.scan();
   }
 
   // ── Lifecycle ──────────────────────────────────────────────

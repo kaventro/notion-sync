@@ -6,10 +6,10 @@
 }
 
 .notion-sync-panel {
-  padding: 16px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
   background: var(--background-primary);
   height: 100%;
   overflow-y: auto;
@@ -21,19 +21,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .notion-sync-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .notion-sync-brand h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-normal);
 }
@@ -99,10 +99,10 @@
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
-  padding: 12px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -112,14 +112,14 @@
   color: var(--text-on-accent);
   border: none;
   border-radius: 6px;
-  padding: 8px 16px;
+  padding: 6px 12px;
   font-weight: 500;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.2s ease;
   width: 100%;
 }
@@ -136,24 +136,24 @@
 /* Action Grid */
 .notion-sync-action-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 6px;
 }
 
 .notion-sync-grid-btn {
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  padding: 8px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   color: var(--text-normal);
   cursor: pointer;
   transition: all 0.2s ease;
-  min-height: 54px;
+  min-height: 42px;
   text-align: center;
 }
 
@@ -168,10 +168,10 @@
   transform: translateY(0);
 }
 
-.notion-sync-grid-btn svg, 
+.notion-sync-grid-btn svg,
 .notion-sync-grid-btn .clickable-icon {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   margin: 0 auto;
 }
 
@@ -211,25 +211,25 @@
 /* Stats Cards */
 .notion-sync-stats-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 6px;
 }
 
 .notion-sync-stat-card {
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
-  padding: 12px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 2px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
 
 .notion-sync-stat-val {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-normal);
 }
@@ -246,10 +246,10 @@
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
-  padding: 12px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
 
@@ -273,8 +273,8 @@
   background: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 13px;
+  padding: 4px 10px;
+  font-size: 12px;
   color: var(--text-normal);
   cursor: pointer;
   transition: border-color 0.2s;
@@ -300,9 +300,9 @@
 .notion-sync-footer {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: 10px;
   border-top: 1px solid var(--background-modifier-border);
 }
 
@@ -311,7 +311,7 @@
   background: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
-  padding: 8px;
+  padding: 6px;
   font-size: 11px;
   font-weight: 500;
   display: flex;
@@ -327,6 +327,106 @@
   background: var(--background-modifier-hover);
   border-color: var(--interactive-accent);
   color: var(--text-normal);
+}
+
+/* ── Changes List (files to push, like git status) ─────────── */
+
+.notion-sync-changes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notion-sync-changes-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  padding: 1px 7px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.notion-sync-changes-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.notion-sync-changes-empty {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 2px 0;
+}
+
+.notion-sync-change-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.notion-sync-change-row:hover {
+  background: var(--background-modifier-hover);
+}
+
+.notion-sync-change-status {
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-monospace);
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.notion-sync-change-status.is-new {
+  color: var(--color-green, #4caf50);
+}
+
+.notion-sync-change-status.is-modified {
+  color: var(--color-orange, #e9973f);
+}
+
+.notion-sync-change-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notion-sync-change-push {
+  background: transparent;
+  border: none;
+  padding: 2px;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  visibility: hidden;
+  flex-shrink: 0;
+}
+
+.notion-sync-change-row:hover .notion-sync-change-push {
+  visibility: visible;
+}
+
+.notion-sync-change-push:hover {
+  color: var(--interactive-accent);
+  background: var(--background-modifier-border);
+}
+
+.notion-sync-change-push svg {
+  width: 13px;
+  height: 13px;
 }
 
 /* ── File Explorer Indicators ──────────────────────────────── */
@@ -479,6 +579,11 @@
   color: var(--text-muted);
 }
 
+.sync-log-filter {
+  display: flex;
+  align-items: center;
+}
+
 .sync-log-filter-btn {
   margin-right: 4px;
   padding: 2px 8px;
@@ -487,6 +592,16 @@
 
 .sync-log-filter-btn--active {
   font-weight: bold;
+}
+
+.sync-log-clear-btn {
+  margin-left: auto;
+  margin-right: 0;
+  color: var(--text-muted);
+}
+
+.sync-log-clear-btn:hover {
+  color: var(--text-error);
 }
 
 .sync-log-entry {

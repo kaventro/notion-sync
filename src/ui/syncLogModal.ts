@@ -1,22 +1,22 @@
 import { App, Modal } from "obsidian";
-import type { SyncLogEntry } from "../types";
+import type { StateManager } from "../stateManager";
 
 /**
- * Modal that displays the sync log with filtering and auto-scroll.
+ * Modal that displays the sync log with filtering, clearing, and auto-scroll.
  */
 export class SyncLogModal extends Modal {
-  private logs: SyncLogEntry[];
   private filter: "all" | "info" | "warn" | "error" = "all";
 
-  constructor(app: App, logs: SyncLogEntry[]) {
+  constructor(app: App, private readonly stateManager: StateManager) {
     super(app);
-    this.logs = logs;
   }
 
   onOpen(): void {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.addClass("notion-sync-log-modal");
+
+    const logs = this.stateManager.getLogs();
 
     // Header
     contentEl.createEl("h2", { text: "Sync log" });
@@ -28,10 +28,20 @@ export class SyncLogModal extends Modal {
     this.createFilterButton(filterBar, "Warnings", "warn");
     this.createFilterButton(filterBar, "Errors", "error");
 
+    const clearBtn = filterBar.createEl("button", {
+      text: "Clear",
+      cls: "sync-log-filter-btn sync-log-clear-btn",
+      attr: { "aria-label": "Clear all log entries" },
+    });
+    clearBtn.addEventListener("click", () => {
+      this.stateManager.clearLogs();
+      this.onOpen();
+    });
+
     // Log container
     const logContainer = contentEl.createDiv({ cls: "sync-log-entries" });
 
-    this.renderLogs(logContainer);
+    this.renderLogs(logContainer, logs);
 
     // Scroll to bottom
     logContainer.scrollTop = logContainer.scrollHeight;
@@ -39,10 +49,10 @@ export class SyncLogModal extends Modal {
     // Stats
     const statsEl = contentEl.createDiv({ cls: "sync-log-stats" });
 
-    const infos = this.logs.filter((l) => l.level === "info").length;
-    const warns = this.logs.filter((l) => l.level === "warn").length;
-    const errors = this.logs.filter((l) => l.level === "error").length;
-    statsEl.textContent = `Total: ${this.logs.length} entries | ${infos} info, ${warns} warnings, ${errors} errors`;
+    const infos = logs.filter((l) => l.level === "info").length;
+    const warns = logs.filter((l) => l.level === "warn").length;
+    const errors = logs.filter((l) => l.level === "error").length;
+    statsEl.textContent = `Total: ${logs.length} entries | ${infos} info, ${warns} warnings, ${errors} errors`;
   }
 
   private createFilterButton(
@@ -63,11 +73,11 @@ export class SyncLogModal extends Modal {
     });
   }
 
-  private renderLogs(container: HTMLElement): void {
+  private renderLogs(container: HTMLElement, logs: ReturnType<StateManager["getLogs"]>): void {
     const filtered =
       this.filter === "all"
-        ? this.logs
-        : this.logs.filter((l) => l.level === this.filter);
+        ? logs
+        : logs.filter((l) => l.level === this.filter);
 
     if (filtered.length === 0) {
       container.createEl("p", {

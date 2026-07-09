@@ -26,6 +26,9 @@ export default class NotionSyncPlugin extends Plugin {
   private syncEngine!: SyncEngine;
   private scheduledInterval: number | null = null;
   private saveDebounce: number | null = null;
+  // Separate from saveDebounce: rename/delete events debounce a state
+  // save and must not cancel a pending auto-sync (or vice versa).
+  private autoSyncDebounce: number | null = null;
   private onSaveEventRef: ReturnType<typeof this.app.vault.on> | null = null;
 
   // ── Status Bar ─────────────────────────────────────────────
@@ -75,7 +78,7 @@ export default class NotionSyncPlugin extends Plugin {
       name: "Sync current note to Notion",
       editorCallback: (_editor, ctx) => {
         const file = ctx.file;
-        if (file) void this.syncCurrentFile(file);
+        if (file) void this.pushFile(file);
       },
     });
 
@@ -258,9 +261,10 @@ export default class NotionSyncPlugin extends Plugin {
       case SyncMode.OnSave:
         this.onSaveEventRef = this.app.vault.on("modify", (file) => {
           if (file instanceof TFile && file.extension === "md") {
-            if (this.saveDebounce) window.clearTimeout(this.saveDebounce);
-            this.saveDebounce = window.setTimeout(() => {
-              void this.syncCurrentFile(file);
+            if (this.autoSyncDebounce) window.clearTimeout(this.autoSyncDebounce);
+            this.autoSyncDebounce = window.setTimeout(() => {
+              this.autoSyncDebounce = null;
+              void this.pushFile(file);
             }, 2000);
           }
         });
@@ -357,7 +361,7 @@ export default class NotionSyncPlugin extends Plugin {
       return;
     }
     try {
-      await this.syncCurrentFile(file);
+      await this.pushFile(file);
       this.dirtyFiles.delete(file.path);
       this.refreshExplorerDecorations();
       this.updateStatusBar("idle");
@@ -440,6 +444,11 @@ export default class NotionSyncPlugin extends Plugin {
 
   openSyncLogPublic(): void {
     this.openSyncLog();
+  }
+
+  /** List local files a push would send to Notion (used by the panel) */
+  async scanPendingChanges(): Promise<import("./sync/changeScanner").PendingChange[]> {
+    return this.syncEngine.scanPendingChanges();
   }
 
   /** Open (or reveal) the sync side panel in the right sidebar */
@@ -542,7 +551,8 @@ export default class NotionSyncPlugin extends Plugin {
     }
   }
 
-  private async syncCurrentFile(file: TFile): Promise<void> {
+  /** Push a single file to Notion (used by commands, auto-sync, and the panel) */
+  async pushFile(file: TFile): Promise<void> {
     this.updateStatusBar("syncing");
     try {
       await this.syncEngine.syncCurrentFile(file);
@@ -562,7 +572,7 @@ export default class NotionSyncPlugin extends Plugin {
   }
 
   private openSyncLog(): void {
-    new SyncLogModal(this.app, this.stateManager.getLogs()).open();
+    new SyncLogModal(this.app, this.stateManager).open();
   }
 
   private clearScheduledSync(): void {
@@ -574,9 +584,9 @@ export default class NotionSyncPlugin extends Plugin {
       this.app.vault.offref(this.onSaveEventRef);
       this.onSaveEventRef = null;
     }
-    if (this.saveDebounce !== null) {
-      window.clearTimeout(this.saveDebounce);
-      this.saveDebounce = null;
+    if (this.autoSyncDebounce !== null) {
+      window.clearTimeout(this.autoSyncDebounce);
+      this.autoSyncDebounce = null;
     }
   }
 

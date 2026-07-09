@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
+import { ItemView, TFile, WorkspaceLeaf, setIcon } from "obsidian";
 import type NotionSyncPlugin from "../main";
 import { SyncMode } from "../types";
 
@@ -21,6 +21,9 @@ export class SyncPanelView extends ItemView {
   private filesCountEl: HTMLElement | null = null;
   private foldersCountEl: HTMLElement | null = null;
   private lastSyncEl: HTMLElement | null = null;
+  private changesListEl: HTMLElement | null = null;
+  private changesCountEl: HTMLElement | null = null;
+  private changesRefreshDebounce: number | null = null;
   private isSyncing = false;
   private hasError = false;
 
@@ -45,6 +48,19 @@ export class SyncPanelView extends ItemView {
     this.render();
     // Refresh status every 30s
     this.refreshInterval = window.setInterval(() => this.refreshStatus(), 30_000);
+
+    // Keep the changes list in step with vault edits (debounced)
+    const scheduleChangesRefresh = (): void => {
+      if (this.changesRefreshDebounce) window.clearTimeout(this.changesRefreshDebounce);
+      this.changesRefreshDebounce = window.setTimeout(() => {
+        this.changesRefreshDebounce = null;
+        void this.refreshChanges();
+      }, 800);
+    };
+    this.registerEvent(this.app.vault.on("modify", scheduleChangesRefresh));
+    this.registerEvent(this.app.vault.on("create", scheduleChangesRefresh));
+    this.registerEvent(this.app.vault.on("delete", scheduleChangesRefresh));
+    this.registerEvent(this.app.vault.on("rename", scheduleChangesRefresh));
     return Promise.resolve();
   }
 
@@ -52,6 +68,10 @@ export class SyncPanelView extends ItemView {
     if (this.refreshInterval !== null) {
       window.clearInterval(this.refreshInterval);
       this.refreshInterval = null;
+    }
+    if (this.changesRefreshDebounce !== null) {
+      window.clearTimeout(this.changesRefreshDebounce);
+      this.changesRefreshDebounce = null;
     }
     return Promise.resolve();
   }
@@ -108,6 +128,14 @@ export class SyncPanelView extends ItemView {
     const progressBar = this.progressEl.createDiv({ cls: "notion-sync-progress-bar" });
     this.progressFillEl = progressBar.createDiv({ cls: "notion-sync-progress-fill" });
     this.progressTextEl = this.progressEl.createDiv({ cls: "notion-sync-progress-text" });
+
+    // ── Changes (files a push would send, like git status) ────
+    const changesCard = root.createDiv({ cls: "notion-sync-card-section notion-sync-changes-card" });
+    const changesHeader = changesCard.createDiv({ cls: "notion-sync-changes-header" });
+    changesHeader.createEl("p", { text: "Changes", cls: "notion-sync-card-section-title" });
+    this.changesCountEl = changesHeader.createSpan({ cls: "notion-sync-changes-count", text: "0" });
+    this.changesListEl = changesCard.createDiv({ cls: "notion-sync-changes-list" });
+    void this.refreshChanges();
 
     // ── Stats Cards ────────────────────────────────────────────
     const statsContainer = root.createDiv({ cls: "notion-sync-stats-container" });
@@ -191,7 +219,8 @@ export class SyncPanelView extends ItemView {
   /** Update just the status block without full re-render */
   refreshStatus(): void {
     const sm = this.plugin.stateManager;
-    
+    void this.refreshChanges();
+
     if (this.filesCountEl) {
       this.filesCountEl.setText(String(sm.syncedFileCount));
     }
@@ -209,6 +238,66 @@ export class SyncPanelView extends ItemView {
           : "Never synced",
       });
     }
+  }
+
+  /** Rebuild the pending-changes list (like git status) */
+  async refreshChanges(): Promise<void> {
+    const listEl = this.changesListEl;
+    const countEl = this.changesCountEl;
+    if (!listEl || !countEl) return;
+
+    const changes = await this.plugin.scanPendingChanges();
+    countEl.setText(String(changes.length));
+
+    listEl.empty();
+    if (changes.length === 0) {
+      listEl.createDiv({ cls: "notion-sync-changes-empty", text: "Everything is synced" });
+      return;
+    }
+
+    for (const change of changes) {
+      const row = listEl.createDiv({ cls: "notion-sync-change-row" });
+
+      row.createSpan({
+        cls: `notion-sync-change-status is-${change.status}`,
+        text: change.status === "new" ? "U" : "M",
+        attr: { "aria-label": change.status === "new" ? "Not synced yet" : "Modified since last sync" },
+      });
+
+      row.createSpan({
+        cls: "notion-sync-change-name",
+        text: change.name,
+        attr: { "aria-label": change.path },
+      });
+
+      row.addEventListener("click", () => {
+        void this.openFile(change.path);
+      });
+
+      const pushBtn = row.createEl("button", {
+        cls: "notion-sync-change-push",
+        attr: { "aria-label": `Push ${change.name} to Notion` },
+      });
+      setIcon(pushBtn, "upload");
+      pushBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        void this.pushSingleChange(change.path);
+      });
+    }
+  }
+
+  private async openFile(path: string): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (file instanceof TFile) {
+      await this.app.workspace.getLeaf(false).openFile(file);
+    }
+  }
+
+  private async pushSingleChange(path: string): Promise<void> {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (!(file instanceof TFile)) return;
+    await this.runAction(() => this.plugin.pushFile(file));
+    await this.refreshChanges();
   }
 
   private updateStatusBadge(): void {
