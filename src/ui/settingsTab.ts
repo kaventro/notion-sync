@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting, activeWindow } from "obsidian";
 import type NotionSyncPlugin from "../main";
 import { SyncMode } from "../types";
 
@@ -68,7 +68,7 @@ export class NotionSyncSettingTab extends PluginSettingTab {
           } catch {
             button.setButtonText("Failed");
           }
-          setTimeout(() => {
+          activeWindow.setTimeout(() => {
             button.setButtonText("Test");
             button.setDisabled(false);
           }, 2000);

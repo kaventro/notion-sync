@@ -1,4 +1,4 @@
-import { requestUrl } from "obsidian";
+import { activeWindow, requestUrl } from "obsidian";
 import { RateLimiter } from "./rateLimiter";
 import type { NotionBlock, NotionApiBlock } from "./types";
 
@@ -54,7 +54,7 @@ export class NotionClient {
       if (resp.status === 429) {
         const retryAfter = resp.headers["retry-after"] || "1";
         const waitMs = parseFloat(retryAfter) * 1000;
-        await new Promise((r) => setTimeout(r, waitMs));
+        await new Promise((r) => activeWindow.setTimeout(r, waitMs));
         return this.request(method, path, body);
       }
 

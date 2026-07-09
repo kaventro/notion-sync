@@ -1,3 +1,5 @@
+import { activeWindow } from "obsidian";
+
 /**
  * Queue-based rate limiter for Notion API.
  * Enforces max 3 requests/second with exponential backoff on 429 errors.
@@ -86,7 +88,7 @@ export class RateLimiter {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => activeWindow.setTimeout(resolve, ms));
   }
 
   /** Number of items waiting in the queue */

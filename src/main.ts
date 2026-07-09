@@ -1,4 +1,4 @@
-import { Plugin, TFile, Notice } from "obsidian";
+import { Plugin, TFile, Notice, activeDocument, activeWindow } from "obsidian";
 import { NotionClient } from "./notionClient";
 import { SyncEngine } from "./syncEngine";
 import { StateManager } from "./stateManager";
@@ -217,7 +217,7 @@ export default class NotionSyncPlugin extends Plugin {
   private refreshExplorerDecorations(): void {
     const allMappings = this.stateManager.getAllFileMappings();
 
-    document.querySelectorAll<HTMLElement>(".nav-file-title").forEach((el) => {
+    activeDocument.querySelectorAll<HTMLElement>(".nav-file-title").forEach((el) => {
       const path = el.getAttribute("data-path");
       if (!path) return;
 
@@ -255,8 +255,8 @@ export default class NotionSyncPlugin extends Plugin {
       case SyncMode.OnSave:
         this.onSaveEventRef = this.app.vault.on("modify", (file) => {
           if (file instanceof TFile && file.extension === "md") {
-            if (this.saveDebounce) window.clearTimeout(this.saveDebounce);
-            this.saveDebounce = window.setTimeout(() => {
+            if (this.saveDebounce) activeWindow.clearTimeout(this.saveDebounce);
+            this.saveDebounce = activeWindow.setTimeout(() => {
               void this.syncCurrentFile(file);
             }, 2000);
           }
@@ -265,7 +265,7 @@ export default class NotionSyncPlugin extends Plugin {
         break;
 
       case SyncMode.Scheduled:
-        this.scheduledInterval = window.setInterval(
+        this.scheduledInterval = activeWindow.setInterval(
           () => { void this.syncIncremental(); },
           this.settings.scheduledIntervalMinutes * 60 * 1000
         );
@@ -442,13 +442,13 @@ export default class NotionSyncPlugin extends Plugin {
     const { workspace } = this.app;
     const existing = workspace.getLeavesOfType(SYNC_PANEL_VIEW_TYPE);
     if (existing.length > 0) {
-      void workspace.revealLeaf(existing[0]);
+      workspace.setActiveLeaf(existing[0]);
       return;
     }
     const leaf = workspace.getRightLeaf(false);
     if (leaf) {
       await leaf.setViewState({ type: SYNC_PANEL_VIEW_TYPE, active: true });
-      void workspace.revealLeaf(leaf);
+      workspace.setActiveLeaf(leaf);
     }
   }
 
@@ -562,7 +562,7 @@ export default class NotionSyncPlugin extends Plugin {
 
   private clearScheduledSync(): void {
     if (this.scheduledInterval !== null) {
-      window.clearInterval(this.scheduledInterval);
+      activeWindow.clearInterval(this.scheduledInterval);
       this.scheduledInterval = null;
     }
     if (this.onSaveEventRef !== null) {
@@ -570,13 +570,13 @@ export default class NotionSyncPlugin extends Plugin {
       this.onSaveEventRef = null;
     }
     if (this.saveDebounce !== null) {
-      window.clearTimeout(this.saveDebounce);
+      activeWindow.clearTimeout(this.saveDebounce);
       this.saveDebounce = null;
     }
   }
 
   private debounceSaveState(): void {
-    if (this.saveDebounce) window.clearTimeout(this.saveDebounce);
-    this.saveDebounce = window.setTimeout(() => { void this.saveState(); }, 1000);
+    if (this.saveDebounce) activeWindow.clearTimeout(this.saveDebounce);
+    this.saveDebounce = activeWindow.setTimeout(() => { void this.saveState(); }, 1000);
   }
 }

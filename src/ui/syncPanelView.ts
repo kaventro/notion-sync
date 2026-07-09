@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, setIcon } from "obsidian";
+import { ItemView, WorkspaceLeaf, activeWindow, setIcon } from "obsidian";
 import type NotionSyncPlugin from "../main";
 import { SyncMode } from "../types";
 
@@ -36,13 +36,13 @@ export class SyncPanelView extends ItemView {
   onOpen(): Promise<void> {
     this.render();
     // Refresh status every 30s
-    this.refreshInterval = window.setInterval(() => this.refreshStatus(), 30_000);
+    this.refreshInterval = activeWindow.setInterval(() => this.refreshStatus(), 30_000);
     return Promise.resolve();
   }
 
   onClose(): Promise<void> {
     if (this.refreshInterval !== null) {
-      window.clearInterval(this.refreshInterval);
+      activeWindow.clearInterval(this.refreshInterval);
       this.refreshInterval = null;
     }
     return Promise.resolve();
@@ -131,7 +131,7 @@ export class SyncPanelView extends ItemView {
     // Interval picker (only visible in Scheduled mode)
     if (this.plugin.settings.syncMode === SyncMode.Scheduled) {
       const intervalRow = modeSection.createDiv({ cls: "notion-sync-interval-row" });
-      intervalRow.createEl("span", { text: "Every" });
+      intervalRow.createSpan({ text: "Every" });
 
       const intervalSelect = intervalRow.createEl("select", { cls: "notion-sync-select" });
       for (const mins of [5, 10, 15, 30, 60]) {
