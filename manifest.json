@@ -5,6 +5,6 @@
   "minAppVersion": "1.4.0",
   "description": "Sync your vault with Notion \u2014 preserves folder hierarchy, markdown formatting, internal links, metadata, and attachments.",
   "author": "Sharky",
-  "authorUrl": "https://github.com/sharkello",
+  "authorUrl": "https://github.com/kaventro",
   "isDesktopOnly": true
 }
