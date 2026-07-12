@@ -7,6 +7,14 @@ import { SyncMode } from "../types";
  * is built by its own method to keep display() a readable outline.
  */
 export class NotionSyncSettingTab extends PluginSettingTab {
+  /** Notion docs section that explains extracting a page ID from its URL. */
+  private static readonly PAGE_ID_HELP_URL =
+    "https://developers.notion.com/guides/data-apis/working-with-page-content#creating-a-page-with-content";
+
+  /** Notion page for creating/managing integration tokens. */
+  private static readonly TOKEN_HELP_URL =
+    "https://app.notion.com/developers/tokens";
+
   plugin: NotionSyncPlugin;
 
   constructor(app: App, plugin: NotionSyncPlugin) {
@@ -33,8 +41,15 @@ export class NotionSyncSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Notion API token")
       .setDesc(
-        "Your Notion integration secret token. " +
-        "Create one at notion.so/my-integrations."
+        createFragment((frag) => {
+          frag.appendText("Your Notion integration secret token. ");
+          frag.createEl("a", {
+            text: "Create one here",
+            href: NotionSyncSettingTab.TOKEN_HELP_URL,
+            attr: { target: "_blank", rel: "noopener" },
+          });
+          frag.appendText(".");
+        })
       )
       .addText((text) =>
         text
@@ -49,8 +64,17 @@ export class NotionSyncSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Root Notion page ID")
       .setDesc(
-        "The ID of the Notion page that will serve as the vault root. " +
-        "Find it in the page URL: notion.so/Page-Title-<PAGE_ID>."
+        createFragment((frag) => {
+          frag.appendText(
+            "The ID of the Notion page that will serve as the vault root. " +
+            "Find it in the page URL: notion.so/Page-Title-<PAGE_ID>. "
+          );
+          frag.createEl("a", {
+            text: "How to find the page ID",
+            href: NotionSyncSettingTab.PAGE_ID_HELP_URL,
+            attr: { target: "_blank", rel: "noopener" },
+          });
+        })
       )
       .addText((text) =>
         text
@@ -59,6 +83,19 @@ export class NotionSyncSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.rootPageId = value.trim();
             await this.plugin.saveSettings();
+          })
+      )
+      .addExtraButton((button) =>
+        button
+          .setIcon("help-circle")
+          .setTooltip(
+            'Open the page in Notion, click ••• (top-right) ' +
+            'or Share, then "Copy link". The page ID is the 32-character ' +
+            'string at the end of the URL — after the last "-" and ' +
+            'before any "?".'
+          )
+          .onClick(() => {
+            window.open(NotionSyncSettingTab.PAGE_ID_HELP_URL, "_blank");
           })
       );
 
