@@ -36,6 +36,14 @@ export interface SyncMapping {
   notionPageId: string;
   lastSyncedHash: string;
   lastSyncedAt: number;
+  /**
+   * File basename as of the last sync. Renaming a note leaves its content
+   * (and therefore its hash) untouched, so this is the only way to notice
+   * that the Notion page title has gone stale. Undefined for mappings
+   * written by versions before title sync existed — treated as "unknown",
+   * which pushes the title once and backfills the field.
+   */
+  lastSyncedTitle?: string;
 }
 
 /** Full plugin persistent state */

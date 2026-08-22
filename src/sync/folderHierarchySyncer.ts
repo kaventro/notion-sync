@@ -116,6 +116,14 @@ export class FolderHierarchySyncer {
           );
           this.deps.stateManager.setFolderMapping(subFolder.path, folderPageId);
           await this.deps.persister.persist();
+        } else if (this.deps.notion.getPageTitle(page) !== subFolder.name) {
+          // Folder renamed in the vault — rename its Notion page too.
+          // The page object is already in hand, so this costs no extra read.
+          await this.deps.notion.updatePageTitle(folderPageId, subFolder.name);
+          this.deps.stateManager.addLog(
+            "info",
+            `Renamed folder in Notion: ${subFolder.path}`
+          );
         }
       }
 

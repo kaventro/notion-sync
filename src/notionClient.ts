@@ -236,6 +236,13 @@ export class NotionClient implements NotionApi {
     await this.request("PATCH", `/pages/${pageId}`, { properties });
   }
 
+  /** Rename a page (its "title" property) */
+  async updatePageTitle(pageId: string, title: string): Promise<void> {
+    await this.updatePageProperties(pageId, {
+      title: { title: [{ type: "text", text: { content: title } }] },
+    });
+  }
+
   /** Retrieve a page; returns null if not found */
   async getPage(pageId: string): Promise<Record<string, unknown> | null> {
     try {

@@ -1,6 +1,7 @@
 import type { App, TFile } from "obsidian";
 import { Notice } from "obsidian";
 import type { StateManager } from "../stateManager";
+import type { SyncMapping } from "../types";
 import { MarkdownParser } from "../markdownParser";
 import type { LinkResolver } from "../linkResolver";
 import type { AttachmentUploader } from "../attachmentUploader";
@@ -122,10 +123,15 @@ export class PushService {
         try {
           const content = await app.vault.cachedRead(file);
           const hash = hashContent(content);
+          const mapping = stateManager.getFileMapping(file.path);
 
           if (stateManager.needsSync(file.path, hash)) {
             await this.syncFile(file, false);
             synced++;
+            await this.deps.persister.persist();
+          } else if (mapping && mapping.lastSyncedTitle !== file.basename) {
+            // Content unchanged but the note was renamed — push just the title.
+            if (await this.syncTitleOnly(file, mapping)) synced++;
             await this.deps.persister.persist();
           }
         } catch (error) {
@@ -201,8 +207,10 @@ export class PushService {
     const existingMapping = stateManager.getFileMapping(file.path);
 
     if (existingMapping) {
-      // Update: clear existing content and re-append
+      // Update: rename the page if needed, then clear content and re-append
       try {
+        await this.pushTitle(file, existingMapping);
+
         await notion.clearPageContent(existingMapping.notionPageId);
         if (blocks.length > 0) {
           await notion.appendBlocks(existingMapping.notionPageId, blocks);
@@ -217,6 +225,7 @@ export class PushService {
           notionPageId: existingMapping.notionPageId,
           lastSyncedHash: hash,
           lastSyncedAt: Date.now(),
+          lastSyncedTitle: file.basename,
         });
 
         // Add history entry for push
@@ -258,6 +267,7 @@ export class PushService {
       notionPageId: pageId,
       lastSyncedHash: hash,
       lastSyncedAt: Date.now(),
+      lastSyncedTitle: file.basename,
     });
 
     // Add history entry for push (new page created)
@@ -270,6 +280,71 @@ export class PushService {
 
     stateManager.addLog("info", `Created: ${file.path}`, file.path);
     return true;
+  }
+
+  /**
+   * Rename the Notion page when the note's basename no longer matches the
+   * title we last pushed. Skipped when they already match, so a normal
+   * content sync costs no extra request.
+   */
+  private async pushTitle(file: TFile, mapping: SyncMapping): Promise<boolean> {
+    if (mapping.lastSyncedTitle === file.basename) return false;
+
+    await this.deps.notion.updatePageTitle(mapping.notionPageId, file.basename);
+
+    // An undefined previous title means the mapping predates title sync;
+    // that is a one-off backfill, not a rename worth reporting.
+    const renamed = mapping.lastSyncedTitle !== undefined;
+    if (renamed) {
+      this.deps.stateManager.addLog(
+        "info",
+        `Renamed in Notion: ${mapping.lastSyncedTitle} → ${file.basename}`,
+        file.path
+      );
+    }
+    return renamed;
+  }
+
+  /**
+   * Push only the page title for a note whose content is already in sync.
+   * Renaming a note leaves its content untouched, so an incremental sync
+   * would otherwise skip it and the Notion page would keep the old name.
+   */
+  private async syncTitleOnly(file: TFile, mapping: SyncMapping): Promise<boolean> {
+    const { stateManager } = this.deps;
+    try {
+      const renamed = await this.pushTitle(file, mapping);
+
+      stateManager.setFileMapping(file.path, {
+        ...mapping,
+        lastSyncedAt: Date.now(),
+        lastSyncedTitle: file.basename,
+      });
+
+      if (renamed) {
+        stateManager.addHistoryEntry({
+          timestamp: Date.now(),
+          operation: "push",
+          filePath: file.path,
+          fileName: file.basename,
+        });
+      }
+
+      return renamed;
+    } catch (error) {
+      // Page gone from Notion: drop the stale mapping so the next sync
+      // recreates the page instead of failing on every run.
+      if (this.isPageGoneError(error)) {
+        stateManager.removeFileMapping(file.path);
+        stateManager.addLog(
+          "info",
+          `Notion page missing or archived — will be recreated: ${file.path}`,
+          file.path
+        );
+        return false;
+      }
+      throw error;
+    }
   }
 
   /**

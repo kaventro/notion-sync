@@ -15,6 +15,7 @@ export interface NotionApi {
   ): Promise<string>;
   appendBlocks(pageId: string, blocks: NotionBlock[]): Promise<void>;
   clearPageContent(pageId: string): Promise<void>;
+  updatePageTitle(pageId: string, title: string): Promise<void>;
   getPage(pageId: string): Promise<Record<string, unknown> | null>;
   getBlocksWithContent(pageId: string): Promise<NotionApiBlock[]>;
   getChildPages(pageId: string): Promise<Array<{ id: string; title: string }>>;

@@ -15,6 +15,7 @@ Synchronize your entire Obsidian vault to Notion — preserving folder hierarchy
 - **Changes list** — a `git status`-style list of files that have local changes pending a push, each with its own push button
 - **Sync history** — a history modal of every push/pull, with rollback for pulled files
 - **Folder hierarchy** — recreates your folder tree as nested Notion pages
+- **Rename sync** — renaming a note or folder renames its Notion page on the next push
 - **Markdown conversion** — headings, bold, italic, code, tables, blockquotes, lists, dividers, and more all convert to native Notion blocks
 - **Frontmatter metadata** — YAML frontmatter is parsed and synced as Notion page properties
 - **Internal link resolution** — `[[wikilinks]]` are resolved to their synced Notion page URLs
@@ -84,7 +85,7 @@ Click **Test Connection** to verify everything is working.
 Open the panel from the ribbon icon (cloud) or the **Open sync panel** command. It gives you:
 
 - **Push vault to Notion** and quick actions for **Sync Changed**, **Push Note**, **Pull All**, and **Pull New**
-- A **Changes** section listing files with local edits not yet pushed — `U` for not-yet-synced notes, `M` for modified ones — each row opens the file or pushes it individually
+- A **Changes** section listing files with local edits not yet pushed — `U` for not-yet-synced notes, `M` for modified ones, `R` for renamed ones — each row opens the file or pushes it individually
 - Live **status badge**, synced **file/folder counts**, and the time of the last sync
 - **History** and **Logs** buttons
 

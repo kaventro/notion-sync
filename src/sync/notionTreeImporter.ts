@@ -252,10 +252,15 @@ export class NotionTreeImporter {
       await app.vault.create(filePath, markdown);
 
       const hash = hashContent(markdown);
+      // Record the local name, not the Notion title: they differ when the
+      // title had to be sanitized or de-duplicated, and a push must only
+      // rename the Notion page after the user renames the note.
+      const localName = filePath.split("/").pop()?.replace(/\.md$/, "") ?? safeTitle;
       stateManager.setFileMapping(filePath, {
         notionPageId: pageId,
         lastSyncedHash: hash,
         lastSyncedAt: Date.now(),
+        lastSyncedTitle: localName,
       });
       await this.deps.persister.persist();
 

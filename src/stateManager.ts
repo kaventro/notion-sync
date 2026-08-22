@@ -200,16 +200,31 @@ export class StateManager {
 
   // ── Utilities ──────────────────────────────────────────────
 
-  /** Rename a file path in all mappings */
+  /** Rename a file or folder path in all mappings */
   renamePath(oldPath: string, newPath: string): void {
-    if (this.state.fileMappings[oldPath]) {
-      this.state.fileMappings[newPath] = this.state.fileMappings[oldPath];
-      delete this.state.fileMappings[oldPath];
-      this.dirty = true;
-    }
-    if (this.state.folderMappings[oldPath]) {
-      this.state.folderMappings[newPath] = this.state.folderMappings[oldPath];
-      delete this.state.folderMappings[oldPath];
+    this.remapPaths(this.state.fileMappings, oldPath, newPath);
+    this.remapPaths(this.state.folderMappings, oldPath, newPath);
+  }
+
+  /**
+   * Move `oldPath` — and everything nested under it — to `newPath` within
+   * one mapping table. Obsidian reports a folder rename as a single event
+   * for the folder, so nested entries have to follow their parent or they
+   * go stale and the next push creates duplicate Notion pages.
+   */
+  private remapPaths<T>(
+    table: Record<string, T>,
+    oldPath: string,
+    newPath: string
+  ): void {
+    const prefix = `${oldPath}/`;
+    for (const key of Object.keys(table)) {
+      const isSelf = key === oldPath;
+      if (!isSelf && !key.startsWith(prefix)) continue;
+
+      const target = isSelf ? newPath : `${newPath}/${key.slice(prefix.length)}`;
+      table[target] = table[key];
+      delete table[key];
       this.dirty = true;
     }
   }

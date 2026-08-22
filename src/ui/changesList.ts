@@ -10,6 +10,13 @@ export interface ChangesListCallbacks {
   onPushFile: (path: string) => Promise<void>;
 }
 
+/** Single-letter badge shown for each pending change, git-status style. */
+const STATUS_MARKS: Record<PendingChange["status"], { text: string; label: string }> = {
+  new: { text: "U", label: "Not synced yet" },
+  modified: { text: "M", label: "Modified since last sync" },
+  renamed: { text: "R", label: "Renamed since last sync" },
+};
+
 /**
  * Renders the "Changes" card of the sync panel: a git-status-like list
  * of files a push would send, with per-file open and push actions.
@@ -53,10 +60,12 @@ export class ChangesList {
   private renderRow(listEl: HTMLElement, change: PendingChange): void {
     const row = listEl.createDiv({ cls: "notion-vault-sync-change-row" });
 
+    const mark = STATUS_MARKS[change.status];
+
     row.createSpan({
       cls: `notion-vault-sync-change-status is-${change.status}`,
-      text: change.status === "new" ? "U" : "M",
-      attr: { "aria-label": change.status === "new" ? "Not synced yet" : "Modified since last sync" },
+      text: mark.text,
+      attr: { "aria-label": mark.label },
     });
 
     row.createSpan({

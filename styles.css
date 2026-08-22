@@ -393,6 +393,10 @@
   color: var(--color-orange, #e9973f);
 }
 
+.notion-vault-sync-change-status.is-renamed {
+  color: var(--color-blue, #4a9eff);
+}
+
 .notion-vault-sync-change-name {
   flex: 1;
   font-size: 12px;
