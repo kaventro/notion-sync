@@ -46,12 +46,19 @@ jobs:
       - name: Create GitHub Release and upload assets
         uses: ncipollo/release-action@v1
         with:
+          # Only the three files Obsidian downloads. versions.json lives in
+          # the repo, not in the release, and the reviewer flags it as an
+          # unsupported extra asset.
           artifacts: |
             main.js
             styles.css
             manifest.json
-            versions.json
           tag: ${{ env.RELEASE_TAG }}
+          # Releases without notes get flagged in review; generate them from
+          # the commits since the previous tag.
+          generateReleaseNotes: true
+          # Re-pushing a tag should refresh the release instead of failing.
+          allowUpdates: true
 
 # Note: GitHub artifact attestations are generated for main.js and styles.css
 # via actions/attest so the release assets are covered by platform-supported provenance.

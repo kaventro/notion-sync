@@ -176,7 +176,7 @@ export class SyncPanelView extends ItemView {
     // Interval picker (only visible in Scheduled mode)
     if (this.plugin.settings.syncMode === SyncMode.Scheduled) {
       const intervalRow = modeCard.createDiv({ cls: "notion-vault-sync-mode-row" });
-      intervalRow.createEl("span", { text: "Every", cls: "notion-vault-sync-interval-label" });
+      intervalRow.createSpan({ text: "Every", cls: "notion-vault-sync-interval-label" });
 
       const intervalSelect = intervalRow.createEl("select", { cls: "notion-vault-sync-select" });
       for (const mins of [5, 10, 15, 30, 60]) {

@@ -29,7 +29,7 @@ Synchronize your entire Obsidian vault to Notion — preserving folder hierarchy
 
 ## Requirements
 
-- Obsidian **1.4.0** or later
+- Obsidian **1.13.0** or later
 - A [Notion integration](https://www.notion.so/my-integrations) with access to your target page
 - Desktop only (not supported on mobile)
 
