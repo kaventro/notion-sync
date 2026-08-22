@@ -19,6 +19,7 @@ export default defineConfig([
         // Obsidian-provided globals (declared in obsidian.d.ts)
         activeWindow: "readonly",
         activeDocument: "readonly",
+        createFragment: "readonly",
       },
     },
     plugins: {
